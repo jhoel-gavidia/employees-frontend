@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { login } from "@/services/auth.service";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -16,12 +19,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await login({
+      await login({
         usernameOrEmail,
         password,
       });
 
-      console.log(response);
+      router.push("/dashboard");
     } catch {
       setError("Invalid username or password.");
     } finally {
@@ -81,7 +84,7 @@ export default function LoginPage() {
 
         {error && (
           <p className="text-sm text-red-600">
-            Invalid username or password.
+            {error}
           </p>
         )}
 
