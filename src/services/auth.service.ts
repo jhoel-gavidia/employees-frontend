@@ -1,11 +1,24 @@
-import { apiFetch } from "@/src/lib/api";
-import type { AuthResponse, LoginRequest } from "@/src/types/auth"
+import type { AuthResponse } from "@/types/auth";
 
-export function login(
+interface LoginRequest {
+  usernameOrEmail: string;
+  password: string;
+}
+
+export async function login(
   credentials: LoginRequest
 ): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>("/api/auth/login", {
+  const response = await fetch("/api/auth/login", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(credentials),
   });
+
+  if (!response.ok) {
+    throw new Error("Authentication failed");
+  }
+
+  return response.json();
 }
