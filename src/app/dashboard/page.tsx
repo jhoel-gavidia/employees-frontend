@@ -88,6 +88,10 @@ export default function DashboardPage() {
     setTotalPages(response.totalPages);
   }
 
+  async function handleEmployeeDeleted(id: number) {
+    setEmployees((current) => current.filter((employee) => employee.id !== id));
+  }
+
   return (
     <main className="min-h-screen p-8">
       <div className="flex items-center justify-between">
@@ -128,8 +132,10 @@ export default function DashboardPage() {
               </p>
             ) : (
               <>
-                <EmployeeTable employees={employees} />
-
+                <EmployeeTable
+                  employees={employees}
+                  onDeleted={handleEmployeeDeleted}
+                />
                 <EmployeePagination
                   page={page}
                   totalPages={totalPages}

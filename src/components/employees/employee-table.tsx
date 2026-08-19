@@ -1,15 +1,57 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import type { Employee } from "@/types/employee";
+import { ApiError, deleteEmployee } from "@/services/employee.service";
 
 interface EmployeeTableProps {
   employees: Employee[];
+  onDeleted: (id: number) => Promise<void>;
 }
 
 export default function EmployeeTable({
   employees,
+  onDeleted,
 }: EmployeeTableProps) {
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete(id: number) {
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar este empleado?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      setError(null);
+
+      await deleteEmployee(id);
+      await onDeleted(id);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setError("Tu sesión ha expirado.");
+        return;
+      }
+
+      setError("No se pudo eliminar el empleado.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="mt-4 overflow-x-auto">
+      {error && (
+        <p className="mb-4 text-red-500">
+          {error}
+        </p>
+      )}
+
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b text-left">
@@ -49,11 +91,23 @@ export default function EmployeeTable({
               </td>
 
               <td className="p-3">
-                <Link
-                  href={`/dashboard/employees/${employee.id}/edit`}
-                >
-                  Editar
-                </Link>
+                <div className="flex gap-3">
+                  <Link
+                    href={`/dashboard/employees/${employee.id}/edit`}
+                  >
+                    Editar
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(employee.id)}
+                    disabled={deletingId === employee.id}
+                  >
+                    {deletingId === employee.id
+                      ? "Eliminando..."
+                      : "Eliminar"}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
