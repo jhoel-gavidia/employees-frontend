@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/employee";
-import { getEmployees } from "@/services/employee.service";
+import { ApiError, getEmployees } from "@/services/employee.service";
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
+import EmployeeForm from "@/components/employees/employee-form";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -35,6 +36,11 @@ export default function DashboardPage() {
           return;
         }
 
+        if (error instanceof ApiError && error.status === 401) {
+          router.push("/login");
+          return;
+        }
+
         setError("No se pudieron cargar los empleados.");
       } finally {
         if (!controller.signal.aborted) {
@@ -48,7 +54,7 @@ export default function DashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [page]);
+  }, [page, router]);
 
   async function handleLogout() {
     setLoading(true);
@@ -68,6 +74,27 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleEmployeeCreated() {
+  try {
+    setLoadingEmployees(true);
+    setError(null);
+
+    const data = await getEmployees(page, 10);
+
+    setEmployees(data.content);
+    setTotalPages(data.totalPages);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      router.push("/login");
+      return;
+    }
+
+    setError("No se pudieron cargar los empleados.");
+  } finally {
+    setLoadingEmployees(false);
+  }
+}
+
   return (
     <main className="min-h-screen p-8">
       <div className="flex items-center justify-between">
@@ -86,6 +113,10 @@ export default function DashboardPage() {
 
       <section className="mt-8">
         <h2 className="text-2xl font-semibold">Empleados</h2>
+
+        <div className="mt-6">
+          <EmployeeForm onSuccess={handleEmployeeCreated} />
+        </div>
 
         {loadingEmployees && (
           <p className="mt-4 text-gray-500">Cargando empleados...</p>

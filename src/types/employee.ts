@@ -21,3 +21,13 @@ export interface PageResponse<T> {
   totalElements: number;
   totalPages: number;
 }
+
+export interface EmployeeRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  birthDate: string;
+  phoneNumber: string;
+  salary: number;
+  departmentId: number;
+}
