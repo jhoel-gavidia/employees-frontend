@@ -5,6 +5,7 @@ import type { Department } from "@/types/department";
 import type { EmployeeRequest } from "@/types/employee";
 import { getDepartments } from "@/services/department.service";
 import { ApiError } from "@/services/api-error";
+import type { ValidationErrorResponse } from "@/services/validation-error";
 
 interface EmployeeFormProps {
   initialData?: EmployeeRequest;
@@ -32,9 +33,7 @@ export default function EmployeeForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState<EmployeeRequest>(
-    initialData ?? emptyForm
-  );
+  const [form, setForm] = useState<EmployeeRequest>(initialData ?? emptyForm);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,14 +47,24 @@ export default function EmployeeForm({
 
         setDepartments(data);
       } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError"
-        ) {
+        if (error instanceof ApiError && error.status === 401) {
+          setError("Tu sesión ha expirado.");
           return;
         }
 
-        setError("No se pudieron cargar los departamentos.");
+        if (error instanceof ApiError && error.status === 400) {
+          const data = error.data as ValidationErrorResponse;
+
+          setError(Object.values(data.errors).join(" "));
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 409) {
+          setError("Ya existe un empleado con esos datos.");
+          return;
+        }
+
+        setError("No se pudo crear el empleado.");
       } finally {
         if (!controller.signal.aborted) {
           setLoadingDepartments(false);
@@ -71,22 +80,18 @@ export default function EmployeeForm({
   }, []);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
     const { name, value } = event.target;
 
     setForm((current) => ({
       ...current,
       [name]:
-        name === "salary" || name === "departmentId"
-          ? Number(value)
-          : value,
+        name === "salary" || name === "departmentId" ? Number(value) : value,
     }));
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     try {
@@ -111,11 +116,7 @@ export default function EmployeeForm({
   }
 
   if (error && departments.length === 0) {
-    return (
-      <p className="text-red-500">
-        {error}
-      </p>
-    );
+    return <p className="text-red-500">{error}</p>;
   }
 
   if (departments.length === 0) {
@@ -191,25 +192,15 @@ export default function EmployeeForm({
         </option>
 
         {departments.map((department) => (
-          <option
-            key={department.id}
-            value={department.id}
-          >
+          <option key={department.id} value={department.id}>
             {department.name}
           </option>
         ))}
       </select>
 
-      {error && (
-        <p className="text-red-500">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-red-500">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-      >
+      <button type="submit" disabled={submitting}>
         {submitting ? "Guardando..." : submitLabel}
       </button>
     </form>

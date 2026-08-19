@@ -37,8 +37,14 @@ export async function createEmployee(
   });
 
   if (!response.ok) {
-    throw new ApiError("Failed to create employee", response.status);
-  }
+  const data = await response.json();
+
+  throw new ApiError(
+    "Failed to create employee",
+    response.status,
+    data
+  );
+}
 
   return response.json();
 }
