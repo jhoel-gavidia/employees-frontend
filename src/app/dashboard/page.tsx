@@ -1,16 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-    });
+    setLoading(true);
 
-    router.push("/login");
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+
+      router.push("/login");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -23,8 +35,11 @@ export default function DashboardPage() {
         Bienvenido al sistema de empleados.
       </p>
 
-      <button onClick={handleLogout}>
-        Logout
+      <button
+        onClick={handleLogout}
+        disabled={loading}
+      >
+        {loading ? "Logging out..." : "Logout"}
       </button>
     </main>
   );
