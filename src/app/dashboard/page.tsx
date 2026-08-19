@@ -3,10 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/employee";
-import { ApiError, getEmployees } from "@/services/employee.service";
+import {
+  ApiError,
+  createEmployee,
+  getEmployees,
+} from "@/services/employee.service";
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
 import EmployeeForm from "@/components/employees/employee-form";
+import type { EmployeeRequest } from "@/types/employee";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -74,26 +79,14 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleEmployeeCreated() {
-  try {
-    setLoadingEmployees(true);
-    setError(null);
+  async function handleCreateEmployee(data: EmployeeRequest) {
+    await createEmployee(data);
 
-    const data = await getEmployees(page, 10);
+    const response = await getEmployees(page, 10);
 
-    setEmployees(data.content);
-    setTotalPages(data.totalPages);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      router.push("/login");
-      return;
-    }
-
-    setError("No se pudieron cargar los empleados.");
-  } finally {
-    setLoadingEmployees(false);
+    setEmployees(response.content);
+    setTotalPages(response.totalPages);
   }
-}
 
   return (
     <main className="min-h-screen p-8">
@@ -115,7 +108,10 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-semibold">Empleados</h2>
 
         <div className="mt-6">
-          <EmployeeForm onSuccess={handleEmployeeCreated} />
+          <EmployeeForm
+            submitLabel="Crear empleado"
+            onSubmit={handleCreateEmployee}
+          />
         </div>
 
         {loadingEmployees && (

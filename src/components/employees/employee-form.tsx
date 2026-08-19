@@ -4,29 +4,37 @@ import { FormEvent, useEffect, useState } from "react";
 import type { Department } from "@/types/department";
 import type { EmployeeRequest } from "@/types/employee";
 import { getDepartments } from "@/services/department.service";
-import { ApiError, createEmployee } from "@/services/employee.service";
+import { ApiError } from "@/services/employee.service";
 
 interface EmployeeFormProps {
-  onSuccess: () => void;
+  initialData?: EmployeeRequest;
+  onSubmit: (data: EmployeeRequest) => Promise<void>;
+  submitLabel: string;
 }
 
+const emptyForm: EmployeeRequest = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  birthDate: "",
+  phoneNumber: "",
+  salary: 0,
+  departmentId: 0,
+};
+
 export default function EmployeeForm({
-  onSuccess,
+  initialData,
+  onSubmit,
+  submitLabel,
 }: EmployeeFormProps) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState<EmployeeRequest>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    birthDate: "",
-    phoneNumber: "",
-    salary: 0,
-    departmentId: 0,
-  });
+  const [form, setForm] = useState<EmployeeRequest>(
+    initialData ?? emptyForm
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,33 +84,23 @@ export default function EmployeeForm({
     }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     try {
       setSubmitting(true);
       setError(null);
 
-      await createEmployee(form);
-
-      setForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        birthDate: "",
-        phoneNumber: "",
-        salary: 0,
-        departmentId: 0,
-      });
-
-      onSuccess();
+      await onSubmit(form);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setError("Tu sesión ha expirado.");
         return;
       }
 
-      setError("No se pudo crear el empleado.");
+      setError("No se pudo guardar el empleado.");
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +111,11 @@ export default function EmployeeForm({
   }
 
   if (error && departments.length === 0) {
-    return <p className="text-red-500">{error}</p>;
+    return (
+      <p className="text-red-500">
+        {error}
+      </p>
+    );
   }
 
   if (departments.length === 0) {
@@ -189,7 +191,10 @@ export default function EmployeeForm({
         </option>
 
         {departments.map((department) => (
-          <option key={department.id} value={department.id}>
+          <option
+            key={department.id}
+            value={department.id}
+          >
             {department.name}
           </option>
         ))}
@@ -205,7 +210,7 @@ export default function EmployeeForm({
         type="submit"
         disabled={submitting}
       >
-        {submitting ? "Creando..." : "Crear empleado"}
+        {submitting ? "Guardando..." : submitLabel}
       </button>
     </form>
   );

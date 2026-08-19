@@ -52,3 +52,43 @@ export async function createEmployee(
 
   return response.json();
 }
+
+export async function getEmployeeById(
+  id: number,
+  signal?: AbortSignal
+): Promise<Employee> {
+  const response = await fetch(`/api/employees/${id}`, {
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new ApiError(
+      "Failed to fetch employee",
+      response.status
+    );
+  }
+
+  return response.json();
+}
+
+export async function updateEmployee(
+  id: number,
+  employee: EmployeeRequest
+): Promise<Employee> {
+  const response = await fetch(`/api/employees/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(employee),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(
+      "Failed to update employee",
+      response.status
+    );
+  }
+
+  return response.json();
+}
