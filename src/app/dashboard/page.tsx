@@ -19,24 +19,36 @@ export default function DashboardPage() {
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-  async function fetchEmployees() {
-    try {
-      setLoadingEmployees(true);
-      setError(null);
+    const controller = new AbortController();
 
-      const data = await getEmployees(page, 10);
+    async function fetchEmployees() {
+      try {
+        setLoadingEmployees(true);
+        setError(null);
 
-      setEmployees(data.content);
-      setTotalPages(data.totalPages);
-    } catch {
-      setError("No se pudieron cargar los empleados.");
-    } finally {
-      setLoadingEmployees(false);
+        const data = await getEmployees(page, 10, controller.signal);
+
+        setEmployees(data.content);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setError("No se pudieron cargar los empleados.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingEmployees(false);
+        }
+      }
     }
-  }
 
-  fetchEmployees();
-}, [page]);
+    fetchEmployees();
+
+    return () => {
+      controller.abort();
+    };
+  }, [page]);
 
   async function handleLogout() {
     setLoading(true);
@@ -60,39 +72,26 @@ export default function DashboardPage() {
     <main className="min-h-screen p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
-            Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
 
           <p className="mt-2 text-gray-500">
             Bienvenido al sistema de empleados.
           </p>
         </div>
 
-        <button
-          onClick={handleLogout}
-          disabled={loading}
-        >
+        <button onClick={handleLogout} disabled={loading}>
           {loading ? "Logging out..." : "Logout"}
         </button>
       </div>
 
       <section className="mt-8">
-        <h2 className="text-2xl font-semibold">
-          Empleados
-        </h2>
+        <h2 className="text-2xl font-semibold">Empleados</h2>
 
         {loadingEmployees && (
-          <p className="mt-4 text-gray-500">
-            Cargando empleados...
-          </p>
+          <p className="mt-4 text-gray-500">Cargando empleados...</p>
         )}
 
-        {error && (
-          <p className="mt-4 text-red-500">
-            {error}
-          </p>
-        )}
+        {error && <p className="mt-4 text-red-500">{error}</p>}
 
         {!loadingEmployees && !error && (
           <>
@@ -101,15 +100,17 @@ export default function DashboardPage() {
                 No hay empleados registrados.
               </p>
             ) : (
-              <EmployeeTable employees={employees} />
-            )}
+              <>
+                <EmployeeTable employees={employees} />
 
-            <EmployeePagination
-            page={page}
-            totalPages={totalPages}
-            loading={loadingEmployees}
-            onPageChange={setPage}
-            />
+                <EmployeePagination
+                  page={page}
+                  totalPages={totalPages}
+                  loading={loadingEmployees}
+                  onPageChange={setPage}
+                />
+              </>
+            )}
           </>
         )}
       </section>
