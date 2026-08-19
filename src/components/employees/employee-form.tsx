@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+
 import type { Department } from "@/types/department";
 import type { EmployeeRequest } from "@/types/employee";
+
 import { getDepartments } from "@/services/department.service";
 import { ApiError } from "@/services/api-error";
 import type { ValidationErrorResponse } from "@/services/validation-error";
@@ -31,6 +33,7 @@ export default function EmployeeForm({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<EmployeeRequest>(initialData ?? emptyForm);
@@ -47,24 +50,16 @@ export default function EmployeeForm({
 
         setDepartments(data);
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
         if (error instanceof ApiError && error.status === 401) {
           setError("Tu sesión ha expirado.");
           return;
         }
 
-        if (error instanceof ApiError && error.status === 400) {
-          const data = error.data as ValidationErrorResponse;
-
-          setError(Object.values(data.errors).join(" "));
-          return;
-        }
-
-        if (error instanceof ApiError && error.status === 409) {
-          setError("Ya existe un empleado con esos datos.");
-          return;
-        }
-
-        setError("No se pudo crear el empleado.");
+        setError("No se pudieron cargar los departamentos.");
       } finally {
         if (!controller.signal.aborted) {
           setLoadingDepartments(false);
@@ -105,6 +100,24 @@ export default function EmployeeForm({
         return;
       }
 
+      if (error instanceof ApiError && error.status === 400) {
+        const data = error.data as ValidationErrorResponse;
+
+        setError(Object.values(data.errors).join(" "));
+
+        return;
+      }
+
+      if (error instanceof ApiError && error.status === 409) {
+        setError("Ya existe un empleado con esos datos.");
+        return;
+      }
+
+      if (error instanceof ApiError && error.status === 404) {
+        setError("El empleado o departamento no existe.");
+        return;
+      }
+
       setError("No se pudo guardar el empleado.");
     } finally {
       setSubmitting(false);
@@ -120,11 +133,7 @@ export default function EmployeeForm({
   }
 
   if (departments.length === 0) {
-    return (
-      <p className="text-gray-500">
-        No hay departamentos disponibles para crear un empleado.
-      </p>
-    );
+    return <p className="text-gray-500">No hay departamentos disponibles.</p>;
   }
 
   return (

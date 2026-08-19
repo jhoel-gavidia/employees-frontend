@@ -1,48 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import type { EmployeeRequest } from "@/types/employee";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import type { Employee, EmployeeRequest } from "@/types/employee";
 import { getEmployeeById, updateEmployee } from "@/services/employee.service";
 import { ApiError } from "@/services/api-error";
+
 import EmployeeForm from "@/components/employees/employee-form";
 
-export default function EditEmployeePage() {
+interface EditEmployeePageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function EditEmployeePage({
+  params,
+}: EditEmployeePageProps) {
+  const { id } = use(params);
   const router = useRouter();
-  const params = useParams();
 
-  const id = Number(params.id);
-
-  const [employee, setEmployee] = useState<EmployeeRequest | null>(null);
+  const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    async function fetchEmployee() {
+    async function loadEmployee() {
       try {
         setLoading(true);
         setError(null);
 
-        const data = await getEmployeeById(id, controller.signal);
+        const employeeId = Number(id);
 
-        setEmployee({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          birthDate: data.birthDate,
-          phoneNumber: data.phoneNumber,
-          salary: data.salary,
-          departmentId: data.departmentId,
-        });
+        if (Number.isNaN(employeeId)) {
+          setError("ID de empleado inválido.");
+          return;
+        }
+
+        const data = await getEmployeeById(
+          employeeId,
+          controller.signal
+        );
+
+        setEmployee(data);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
           return;
         }
 
         if (error instanceof ApiError && error.status === 401) {
           router.push("/login");
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 404) {
+          setError("Empleado no encontrado.");
           return;
         }
 
@@ -54,7 +72,7 @@ export default function EditEmployeePage() {
       }
     }
 
-    fetchEmployee();
+    loadEmployee();
 
     return () => {
       controller.abort();
@@ -62,17 +80,12 @@ export default function EditEmployeePage() {
   }, [id, router]);
 
   async function handleUpdate(data: EmployeeRequest) {
-    try {
-      await updateEmployee(id, data);
-      router.push("/dashboard");
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        router.push("/login");
-        return;
-      }
+    const employeeId = Number(id);
 
-      throw error;
-    }
+    await updateEmployee(employeeId, data);
+
+    router.push("/dashboard");
+    router.refresh();
   }
 
   if (loading) {
@@ -86,19 +99,39 @@ export default function EditEmployeePage() {
   if (error || !employee) {
     return (
       <main className="min-h-screen p-8">
-        <p className="text-red-500">{error ?? "Empleado no encontrado."}</p>
+        <p className="text-red-500">
+          {error ?? "Empleado no encontrado."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className="mt-4"
+        >
+          Volver al dashboard
+        </button>
       </main>
     );
   }
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold">Editar empleado</h1>
+      <h1 className="text-3xl font-bold">
+        Editar empleado
+      </h1>
 
       <div className="mt-8 max-w-xl">
         <EmployeeForm
-          initialData={employee}
-          submitLabel="Actualizar empleado"
+          initialData={{
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            email: employee.email,
+            birthDate: employee.birthDate,
+            phoneNumber: employee.phoneNumber,
+            salary: employee.salary,
+            departmentId: employee.departmentId,
+          }}
+          submitLabel="Guardar cambios"
           onSubmit={handleUpdate}
         />
       </div>
