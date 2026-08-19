@@ -1,9 +1,15 @@
 import type { Employee, PageResponse, EmployeeRequest } from "@/types/employee";
 
+export interface EmployeeFilter {
+  name?: string;
+  departmentId?: number;
+  minSalary?: number;
+  maxSalary?: number;
+}
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
   ) {
     super(message);
     this.name = "ApiError";
@@ -13,27 +19,21 @@ export class ApiError extends Error {
 export async function getEmployees(
   page = 0,
   size = 10,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<PageResponse<Employee>> {
-  const response = await fetch(
-    `/api/employees?page=${page}&size=${size}`,
-    {
-      signal,
-    }
-  );
+  const response = await fetch(`/api/employees?page=${page}&size=${size}`, {
+    signal,
+  });
 
   if (!response.ok) {
-    throw new ApiError(
-      "Failed to fetch employees",
-      response.status
-    );
+    throw new ApiError("Failed to fetch employees", response.status);
   }
 
   return response.json();
 }
 
 export async function createEmployee(
-  employee: EmployeeRequest
+  employee: EmployeeRequest,
 ): Promise<Employee> {
   const response = await fetch("/api/employees", {
     method: "POST",
@@ -44,10 +44,7 @@ export async function createEmployee(
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      "Failed to create employee",
-      response.status
-    );
+    throw new ApiError("Failed to create employee", response.status);
   }
 
   return response.json();
@@ -55,17 +52,14 @@ export async function createEmployee(
 
 export async function getEmployeeById(
   id: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Employee> {
   const response = await fetch(`/api/employees/${id}`, {
     signal,
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      "Failed to fetch employee",
-      response.status
-    );
+    throw new ApiError("Failed to fetch employee", response.status);
   }
 
   return response.json();
@@ -73,7 +67,7 @@ export async function getEmployeeById(
 
 export async function updateEmployee(
   id: number,
-  employee: EmployeeRequest
+  employee: EmployeeRequest,
 ): Promise<Employee> {
   const response = await fetch(`/api/employees/${id}`, {
     method: "PUT",
@@ -84,10 +78,7 @@ export async function updateEmployee(
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      "Failed to update employee",
-      response.status
-    );
+    throw new ApiError("Failed to update employee", response.status);
   }
 
   return response.json();
@@ -99,9 +90,50 @@ export async function deleteEmployee(id: number): Promise<void> {
   });
 
   if (!response.ok) {
+    throw new ApiError("Failed to delete employee", response.status);
+  }
+}
+
+export async function filterEmployees(
+  filters: EmployeeFilter,
+  page = 0,
+  size = 10,
+  signal?: AbortSignal
+): Promise<PageResponse<Employee>> {
+  const params = new URLSearchParams();
+
+  if (filters.name) {
+    params.set("name", filters.name);
+  }
+
+  if (filters.departmentId !== undefined) {
+    params.set("departmentId", String(filters.departmentId));
+  }
+
+  if (filters.minSalary !== undefined) {
+    params.set("minSalary", String(filters.minSalary));
+  }
+
+  if (filters.maxSalary !== undefined) {
+    params.set("maxSalary", String(filters.maxSalary));
+  }
+
+  params.set("page", String(page));
+  params.set("size", String(size));
+
+  const response = await fetch(
+    `/api/employees/filter?${params.toString()}`,
+    {
+      signal,
+    }
+  );
+
+  if (!response.ok) {
     throw new ApiError(
-      "Failed to delete employee",
+      "Failed to filter employees",
       response.status
     );
   }
+
+  return response.json();
 }

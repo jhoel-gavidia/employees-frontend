@@ -2,27 +2,38 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Employee } from "@/types/employee";
+
+import type { Employee, EmployeeRequest } from "@/types/employee";
+import type { Department } from "@/types/department";
+
 import {
   ApiError,
   createEmployee,
+  filterEmployees,
   getEmployees,
 } from "@/services/employee.service";
+import type { EmployeeFilter } from "@/services/employee.service";
+
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
 import EmployeeForm from "@/components/employees/employee-form";
-import type { EmployeeRequest } from "@/types/employee";
+import EmployeeFilters from "@/components/employees/employee-filters";
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingEmployees, setLoadingEmployees] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  const [filters, setFilters] = useState<EmployeeFilter>({});
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  const [loading, setLoading] = useState(false);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,7 +43,11 @@ export default function DashboardPage() {
         setLoadingEmployees(true);
         setError(null);
 
-        const data = await getEmployees(page, 10, controller.signal);
+        const hasFilters = Object.keys(filters).length > 0;
+
+        const data = hasFilters
+          ? await filterEmployees(filters, page, 10, controller.signal)
+          : await getEmployees(page, 10, controller.signal);
 
         setEmployees(data.content);
         setTotalPages(data.totalPages);
@@ -59,7 +74,63 @@ export default function DashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [page, router]);
+  }, [page, router, filters]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchDepartments() {
+      try {
+        const response = await fetch("/api/departments", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new ApiError("Failed to fetch departments", response.status);
+        }
+
+        const data: Department[] = await response.json();
+
+        setDepartments(data);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 401) {
+          router.push("/login");
+        }
+      }
+    }
+
+    fetchDepartments();
+
+    return () => {
+      controller.abort();
+    };
+  }, [router]);
+
+  function handleFilter(newFilters: EmployeeFilter) {
+    setPage(0);
+    setFilters(newFilters);
+  }
+
+  async function handleCreateEmployee(data: EmployeeRequest) {
+    await createEmployee(data);
+
+    const hasFilters = Object.keys(filters).length > 0;
+
+    const response = hasFilters
+      ? await filterEmployees(filters, page, 10)
+      : await getEmployees(page, 10);
+
+    setEmployees(response.content);
+    setTotalPages(response.totalPages);
+  }
+
+  async function handleEmployeeDeleted(id: number) {
+    setEmployees((current) => current.filter((employee) => employee.id !== id));
+  }
 
   async function handleLogout() {
     setLoading(true);
@@ -77,19 +148,6 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleCreateEmployee(data: EmployeeRequest) {
-    await createEmployee(data);
-
-    const response = await getEmployees(page, 10);
-
-    setEmployees(response.content);
-    setTotalPages(response.totalPages);
-  }
-
-  async function handleEmployeeDeleted(id: number) {
-    setEmployees((current) => current.filter((employee) => employee.id !== id));
   }
 
   return (
@@ -118,6 +176,12 @@ export default function DashboardPage() {
           />
         </div>
 
+        <EmployeeFilters
+          departments={departments}
+          onFilter={handleFilter}
+          loading={loadingEmployees}
+        />
+
         {loadingEmployees && (
           <p className="mt-4 text-gray-500">Cargando empleados...</p>
         )}
@@ -136,6 +200,7 @@ export default function DashboardPage() {
                   employees={employees}
                   onDeleted={handleEmployeeDeleted}
                 />
+
                 <EmployeePagination
                   page={page}
                   totalPages={totalPages}
