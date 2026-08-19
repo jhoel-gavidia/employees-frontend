@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Employee } from "@/types/employee";
+import type { Employee } from "@/types/employee";
 import { getEmployees } from "@/services/employee.service";
 
 export default function DashboardPage() {
@@ -13,6 +13,28 @@ export default function DashboardPage() {
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  useEffect(() => {
+  async function fetchEmployees() {
+    try {
+      setLoadingEmployees(true);
+      setError(null);
+
+      const data = await getEmployees(page, 10);
+
+      setEmployees(data.content);
+      setTotalPages(data.totalPages);
+    } catch {
+      setError("No se pudieron cargar los empleados.");
+    } finally {
+      setLoadingEmployees(false);
+    }
+  }
+
+  fetchEmployees();
+}, [page]);
 
   async function handleLogout() {
     setLoading(true);
@@ -31,25 +53,6 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    async function loadEmployees() {
-      try {
-        setLoadingEmployees(true);
-        setError(null);
-
-        const data = await getEmployees();
-
-        setEmployees(data.content);
-      } catch {
-        setError("No se pudieron cargar los empleados.");
-      } finally {
-        setLoadingEmployees(false);
-      }
-    }
-
-    loadEmployees();
-  }, []);
 
   return (
     <main className="min-h-screen p-8">
@@ -90,48 +93,79 @@ export default function DashboardPage() {
         )}
 
         {!loadingEmployees && !error && (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="p-3">Nombre</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Teléfono</th>
-                  <th className="p-3">Departamento</th>
-                  <th className="p-3">Salario</th>
-                </tr>
-              </thead>
+          <>
+            {employees.length === 0 ? (
+              <p className="mt-4 text-gray-500">
+                No hay empleados registrados.
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="p-3">Nombre</th>
+                      <th className="p-3">Email</th>
+                      <th className="p-3">Teléfono</th>
+                      <th className="p-3">Departamento</th>
+                      <th className="p-3">Salario</th>
+                    </tr>
+                  </thead>
 
-              <tbody>
-                {employees.map((employee) => (
-                  <tr
-                    key={employee.id}
-                    className="border-b"
-                  >
-                    <td className="p-3">
-                      {employee.firstName} {employee.lastName}
-                    </td>
+                  <tbody>
+                    {employees.map((employee) => (
+                      <tr
+                        key={employee.id}
+                        className="border-b"
+                      >
+                        <td className="p-3">
+                          {employee.firstName} {employee.lastName}
+                        </td>
 
-                    <td className="p-3">
-                      {employee.email}
-                    </td>
+                        <td className="p-3">
+                          {employee.email}
+                        </td>
 
-                    <td className="p-3">
-                      {employee.phoneNumber}
-                    </td>
+                        <td className="p-3">
+                          {employee.phoneNumber}
+                        </td>
 
-                    <td className="p-3">
-                      {employee.departmentName}
-                    </td>
+                        <td className="p-3">
+                          {employee.departmentName}
+                        </td>
 
-                    <td className="p-3">
-                      {employee.salary}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td className="p-3">
+                          {employee.salary}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                onClick={() => setPage((current) => current - 1)}
+                disabled={page === 0 || loadingEmployees}
+              >
+                Anterior
+              </button>
+
+              <span>
+                Página {totalPages === 0 ? 0 : page + 1} de{" "}
+                {totalPages}
+              </span>
+
+              <button
+                onClick={() => setPage((current) => current + 1)}
+                disabled={
+                  page >= totalPages - 1 || loadingEmployees
+                }
+              >
+                Siguiente
+              </button>
+            </div>
+          </>
         )}
       </section>
     </main>
