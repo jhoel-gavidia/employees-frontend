@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/employee";
 import { getEmployees } from "@/services/employee.service";
+import EmployeeTable from "@/components/employees/employee-table";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -99,48 +100,7 @@ export default function DashboardPage() {
                 No hay empleados registrados.
               </p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="p-3">Nombre</th>
-                      <th className="p-3">Email</th>
-                      <th className="p-3">Teléfono</th>
-                      <th className="p-3">Departamento</th>
-                      <th className="p-3">Salario</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {employees.map((employee) => (
-                      <tr
-                        key={employee.id}
-                        className="border-b"
-                      >
-                        <td className="p-3">
-                          {employee.firstName} {employee.lastName}
-                        </td>
-
-                        <td className="p-3">
-                          {employee.email}
-                        </td>
-
-                        <td className="p-3">
-                          {employee.phoneNumber}
-                        </td>
-
-                        <td className="p-3">
-                          {employee.departmentName}
-                        </td>
-
-                        <td className="p-3">
-                          {employee.salary}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <EmployeeTable employees={employees} />
             )}
 
             <div className="mt-6 flex items-center justify-between">
