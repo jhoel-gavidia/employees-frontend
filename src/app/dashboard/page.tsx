@@ -14,6 +14,7 @@ import type { EmployeeFilter } from "@/services/employee.service";
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
 import EmployeeFilters from "@/components/employees/employee-filters";
+import { getDepartments } from "@/services/department.service";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -77,15 +78,7 @@ export default function DashboardPage() {
 
     async function fetchDepartments() {
       try {
-        const response = await fetch("/api/departments", {
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new ApiError("Failed to fetch departments", response.status);
-        }
-
-        const data: Department[] = await response.json();
+        const data = await getDepartments(controller.signal);
 
         setDepartments(data);
       } catch (error) {
