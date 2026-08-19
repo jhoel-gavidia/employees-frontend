@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { Employee, EmployeeRequest } from "@/types/employee";
+import type { Employee } from "@/types/employee";
 import type { Department } from "@/types/department";
 
 import {
   ApiError,
-  createEmployee,
   filterEmployees,
   getEmployees,
 } from "@/services/employee.service";
@@ -16,7 +16,6 @@ import type { EmployeeFilter } from "@/services/employee.service";
 
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
-import EmployeeForm from "@/components/employees/employee-form";
 import EmployeeFilters from "@/components/employees/employee-filters";
 
 export default function DashboardPage() {
@@ -115,19 +114,6 @@ export default function DashboardPage() {
     setFilters(newFilters);
   }
 
-  async function handleCreateEmployee(data: EmployeeRequest) {
-    await createEmployee(data);
-
-    const hasFilters = Object.keys(filters).length > 0;
-
-    const response = hasFilters
-      ? await filterEmployees(filters, page, 10)
-      : await getEmployees(page, 10);
-
-    setEmployees(response.content);
-    setTotalPages(response.totalPages);
-  }
-
   async function handleEmployeeDeleted(id: number) {
     setEmployees((current) => current.filter((employee) => employee.id !== id));
   }
@@ -167,13 +153,10 @@ export default function DashboardPage() {
       </div>
 
       <section className="mt-8">
-        <h2 className="text-2xl font-semibold">Empleados</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Empleados</h2>
 
-        <div className="mt-6">
-          <EmployeeForm
-            submitLabel="Crear empleado"
-            onSubmit={handleCreateEmployee}
-          />
+          <Link href="/dashboard/employees/new">Nuevo empleado</Link>
         </div>
 
         <EmployeeFilters
