@@ -92,3 +92,16 @@ export async function updateEmployee(
 
   return response.json();
 }
+
+export async function deleteEmployee(id: number): Promise<void> {
+  const response = await fetch(`/api/employees/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new ApiError(
+      "Failed to delete employee",
+      response.status
+    );
+  }
+}
