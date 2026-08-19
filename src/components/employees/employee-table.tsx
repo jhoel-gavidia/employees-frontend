@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Employee } from "@/types/employee";
 
 interface EmployeeTableProps {
@@ -17,6 +18,7 @@ export default function EmployeeTable({
             <th className="p-3">Teléfono</th>
             <th className="p-3">Departamento</th>
             <th className="p-3">Salario</th>
+            <th className="p-3">Acciones</th>
           </tr>
         </thead>
 
@@ -44,6 +46,14 @@ export default function EmployeeTable({
 
               <td className="p-3">
                 {employee.salary}
+              </td>
+
+              <td className="p-3">
+                <Link
+                  href={`/dashboard/employees/${employee.id}/edit`}
+                >
+                  Editar
+                </Link>
               </td>
             </tr>
           ))}
