@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/employee";
 import { getEmployees } from "@/services/employee.service";
 import EmployeeTable from "@/components/employees/employee-table";
+import EmployeePagination from "@/components/employees/employee-pagination";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -103,28 +104,12 @@ export default function DashboardPage() {
               <EmployeeTable employees={employees} />
             )}
 
-            <div className="mt-6 flex items-center justify-between">
-              <button
-                onClick={() => setPage((current) => current - 1)}
-                disabled={page === 0 || loadingEmployees}
-              >
-                Anterior
-              </button>
-
-              <span>
-                Página {totalPages === 0 ? 0 : page + 1} de{" "}
-                {totalPages}
-              </span>
-
-              <button
-                onClick={() => setPage((current) => current + 1)}
-                disabled={
-                  page >= totalPages - 1 || loadingEmployees
-                }
-              >
-                Siguiente
-              </button>
-            </div>
+            <EmployeePagination
+            page={page}
+            totalPages={totalPages}
+            loading={loadingEmployees}
+            onPageChange={setPage}
+            />
           </>
         )}
       </section>
