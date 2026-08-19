@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { Department } from "@/types/department";
 import type { EmployeeRequest } from "@/types/employee";
 import { getDepartments } from "@/services/department.service";
-import { ApiError } from "@/services/employee.service";
+import { ApiError } from "@/services/api-error";
 
 interface EmployeeFormProps {
   initialData?: EmployeeRequest;

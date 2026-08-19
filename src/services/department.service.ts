@@ -1,4 +1,5 @@
 import type { Department } from "@/types/department";
+import { ApiError } from "@/services/api-error";
 
 export async function getDepartments(
   signal?: AbortSignal
@@ -8,7 +9,10 @@ export async function getDepartments(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch departments");
+    throw new ApiError(
+      "Failed to fetch departments",
+      response.status
+    );
   }
 
   return response.json();

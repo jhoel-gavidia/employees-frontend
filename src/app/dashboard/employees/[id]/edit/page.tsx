@@ -3,11 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { EmployeeRequest } from "@/types/employee";
-import {
-  ApiError,
-  getEmployeeById,
-  updateEmployee,
-} from "@/services/employee.service";
+import { getEmployeeById, updateEmployee } from "@/services/employee.service";
+import { ApiError } from "@/services/api-error";
 import EmployeeForm from "@/components/employees/employee-form";
 
 export default function EditEmployeePage() {
@@ -40,10 +37,7 @@ export default function EditEmployeePage() {
           departmentId: data.departmentId,
         });
       } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError"
-        ) {
+        if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
 
@@ -92,18 +86,14 @@ export default function EditEmployeePage() {
   if (error || !employee) {
     return (
       <main className="min-h-screen p-8">
-        <p className="text-red-500">
-          {error ?? "Empleado no encontrado."}
-        </p>
+        <p className="text-red-500">{error ?? "Empleado no encontrado."}</p>
       </main>
     );
   }
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold">
-        Editar empleado
-      </h1>
+      <h1 className="text-3xl font-bold">Editar empleado</h1>
 
       <div className="mt-8 max-w-xl">
         <EmployeeForm

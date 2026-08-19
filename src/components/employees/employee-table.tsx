@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Employee } from "@/types/employee";
-import { ApiError, deleteEmployee } from "@/services/employee.service";
+import { deleteEmployee } from "@/services/employee.service";
+import { ApiError } from "@/services/api-error";
 
 interface EmployeeTableProps {
   employees: Employee[];

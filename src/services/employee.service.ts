@@ -1,3 +1,5 @@
+import { ApiError } from "@/services/api-error";
+
 import type { Employee, PageResponse, EmployeeRequest } from "@/types/employee";
 
 export interface EmployeeFilter {
@@ -5,15 +7,6 @@ export interface EmployeeFilter {
   departmentId?: number;
   minSalary?: number;
   maxSalary?: number;
-}
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
 }
 
 export async function getEmployees(

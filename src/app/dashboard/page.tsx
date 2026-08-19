@@ -7,11 +7,8 @@ import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/employee";
 import type { Department } from "@/types/department";
 
-import {
-  ApiError,
-  filterEmployees,
-  getEmployees,
-} from "@/services/employee.service";
+import { filterEmployees, getEmployees } from "@/services/employee.service";
+import { ApiError } from "@/services/api-error";
 import type { EmployeeFilter } from "@/services/employee.service";
 
 import EmployeeTable from "@/components/employees/employee-table";
