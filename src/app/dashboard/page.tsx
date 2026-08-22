@@ -6,15 +6,19 @@ import { useRouter } from "next/navigation";
 
 import type { Employee } from "@/types/employee";
 import type { Department } from "@/types/department";
-
-import { filterEmployees, getEmployees } from "@/services/employee.service";
-import { ApiError } from "@/services/api-error";
 import type { EmployeeFilter } from "@/services/employee.service";
+
+import {
+  filterEmployees,
+  getEmployees,
+} from "@/services/employee.service";
+
+import { ApiError } from "@/services/api-error";
+import { getDepartments } from "@/services/department.service";
 
 import EmployeeTable from "@/components/employees/employee-table";
 import EmployeePagination from "@/components/employees/employee-pagination";
 import EmployeeFilters from "@/components/employees/employee-filters";
-import { getDepartments } from "@/services/department.service";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -43,17 +47,32 @@ export default function DashboardPage() {
         const hasFilters = Object.keys(filters).length > 0;
 
         const data = hasFilters
-          ? await filterEmployees(filters, page, 10, controller.signal)
-          : await getEmployees(page, 10, controller.signal);
+          ? await filterEmployees(
+              filters,
+              page,
+              10,
+              controller.signal
+            )
+          : await getEmployees(
+              page,
+              10,
+              controller.signal
+            );
 
         setEmployees(data.content);
         setTotalPages(data.totalPages);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
           return;
         }
 
-        if (error instanceof ApiError && error.status === 401) {
+        if (
+          error instanceof ApiError &&
+          error.status === 401
+        ) {
           router.push("/login");
           return;
         }
@@ -78,15 +97,23 @@ export default function DashboardPage() {
 
     async function fetchDepartments() {
       try {
-        const data = await getDepartments(controller.signal);
+        const data = await getDepartments(
+          controller.signal
+        );
 
         setDepartments(data);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
           return;
         }
 
-        if (error instanceof ApiError && error.status === 401) {
+        if (
+          error instanceof ApiError &&
+          error.status === 401
+        ) {
           router.push("/login");
         }
       }
@@ -104,8 +131,13 @@ export default function DashboardPage() {
     setFilters(newFilters);
   }
 
-  async function handleEmployeeDeleted(id: number) {
-    setEmployees((current) => current.filter((employee) => employee.id !== id));
+  function handleEmployeeDeleted() {
+    if (employees.length === 1 && page > 0) {
+      setPage((current) => current - 1);
+      return;
+    }
+
+    setEmployees((current) => current.slice(0, -1));
   }
 
   async function handleLogout() {
@@ -130,23 +162,32 @@ export default function DashboardPage() {
     <main className="min-h-screen p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">
+            Dashboard
+          </h1>
 
           <p className="mt-2 text-gray-500">
             Bienvenido al sistema de empleados.
           </p>
         </div>
 
-        <button onClick={handleLogout} disabled={loading}>
+        <button
+          onClick={handleLogout}
+          disabled={loading}
+        >
           {loading ? "Logging out..." : "Logout"}
         </button>
       </div>
 
       <section className="mt-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Empleados</h2>
+          <h2 className="text-2xl font-semibold">
+            Empleados
+          </h2>
 
-          <Link href="/dashboard/employees/new">Nuevo empleado</Link>
+          <Link href="/dashboard/employees/new">
+            Nuevo empleado
+          </Link>
         </div>
 
         <EmployeeFilters
@@ -156,10 +197,16 @@ export default function DashboardPage() {
         />
 
         {loadingEmployees && (
-          <p className="mt-4 text-gray-500">Cargando empleados...</p>
+          <p className="mt-4 text-gray-500">
+            Cargando empleados...
+          </p>
         )}
 
-        {error && <p className="mt-4 text-red-500">{error}</p>}
+        {error && (
+          <p className="mt-4 text-red-500">
+            {error}
+          </p>
+        )}
 
         {!loadingEmployees && !error && (
           <>

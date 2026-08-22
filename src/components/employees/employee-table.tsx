@@ -1,23 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import type { Employee } from "@/types/employee";
+
 import { deleteEmployee } from "@/services/employee.service";
 import { ApiError } from "@/services/api-error";
 
 interface EmployeeTableProps {
   employees: Employee[];
-  onDeleted: (id: number) => Promise<void>;
+  onDeleted: () => void;
 }
 
 export default function EmployeeTable({
   employees,
   onDeleted,
 }: EmployeeTableProps) {
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   async function handleDelete(id: number) {
     const confirmed = window.confirm(
       "¿Estás seguro de que deseas eliminar este empleado?"
@@ -28,31 +25,32 @@ export default function EmployeeTable({
     }
 
     try {
-      setDeletingId(id);
-      setError(null);
-
       await deleteEmployee(id);
-      await onDeleted(id);
+
+      onDeleted();
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        setError("Tu sesión ha expirado.");
+      if (
+        error instanceof ApiError &&
+        error.status === 401
+      ) {
+        window.alert("Tu sesión ha expirado.");
         return;
       }
 
-      setError("No se pudo eliminar el empleado.");
-    } finally {
-      setDeletingId(null);
+      if (
+        error instanceof ApiError &&
+        error.status === 404
+      ) {
+        window.alert("El empleado ya no existe.");
+        return;
+      }
+
+      window.alert("No se pudo eliminar el empleado.");
     }
   }
 
   return (
     <div className="mt-4 overflow-x-auto">
-      {error && (
-        <p className="mb-4 text-red-500">
-          {error}
-        </p>
-      )}
-
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b text-left">
@@ -102,11 +100,8 @@ export default function EmployeeTable({
                   <button
                     type="button"
                     onClick={() => handleDelete(employee.id)}
-                    disabled={deletingId === employee.id}
                   >
-                    {deletingId === employee.id
-                      ? "Eliminando..."
-                      : "Eliminar"}
+                    Eliminar
                   </button>
                 </div>
               </td>
