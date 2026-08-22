@@ -3,3 +3,8 @@ export interface Department {
   name: string;
   officeLocation: string;
 }
+
+export interface DepartmentRequest {
+  name: string;
+  officeLocation: string;
+}
