@@ -38,9 +38,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    async function fetchStatistics() {
+    async function loadStatistics() {
       try {
         const data = await getEmployeeStatistics(controller.signal);
+
         setStatistics(data);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
       }
     }
 
-    fetchStatistics();
+    loadStatistics();
 
     return () => {
       controller.abort();
@@ -63,7 +64,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    async function fetchEmployees() {
+    async function loadEmployees() {
       try {
         setLoadingEmployees(true);
         setError(null);
@@ -94,19 +95,20 @@ export default function DashboardPage() {
       }
     }
 
-    fetchEmployees();
+    loadEmployees();
 
     return () => {
       controller.abort();
     };
-  }, [page, router, filters]);
+  }, [page, filters, router]);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    async function fetchDepartments() {
+    async function loadDepartments() {
       try {
         const data = await getDepartments(controller.signal);
+
         setDepartments(data);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -119,7 +121,7 @@ export default function DashboardPage() {
       }
     }
 
-    fetchDepartments();
+    loadDepartments();
 
     return () => {
       controller.abort();
@@ -134,14 +136,30 @@ export default function DashboardPage() {
   function handleEmployeeDeleted() {
     if (employees.length === 1 && page > 0) {
       setPage((current) => current - 1);
-      return;
+    } else {
+      setEmployees((current) => current.slice(0, -1));
     }
 
-    setEmployees((current) => current.slice(0, -1));
+    const controller = new AbortController();
+
+    getEmployeeStatistics(controller.signal)
+      .then((data) => {
+        setStatistics(data);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 401) {
+          router.push("/login");
+        }
+      });
   }
 
   return (
     <>
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 
@@ -224,6 +242,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* Filtros */}
         <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
           <EmployeeFilters
             departments={departments}
@@ -232,18 +251,21 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Loading */}
         {loadingEmployees && (
           <div className="rounded-xl border border-gray-200 bg-white p-6">
             <p className="text-sm text-gray-500">Cargando empleados...</p>
           </div>
         )}
 
+        {/* Error */}
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
+        {/* Content */}
         {!loadingEmployees && !error && (
           <>
             {employees.length === 0 ? (
