@@ -4,7 +4,12 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { Employee, EmployeeRequest } from "@/types/employee";
-import { getEmployeeById, updateEmployee } from "@/services/employee.service";
+
+import {
+  getEmployeeById,
+  updateEmployee,
+} from "@/services/employee.service";
+
 import { ApiError } from "@/services/api-error";
 
 import EmployeeForm from "@/components/employees/employee-form";
@@ -29,23 +34,24 @@ export default function EditEmployeePage({
     const controller = new AbortController();
 
     async function loadEmployee() {
+      const employeeId = Number(id);
+
+      if (Number.isNaN(employeeId)) {
+        setError("ID de empleado inválido.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        setLoading(true);
-        setError(null);
-
-        const employeeId = Number(id);
-
-        if (Number.isNaN(employeeId)) {
-          setError("ID de empleado inválido.");
-          return;
-        }
-
         const data = await getEmployeeById(
           employeeId,
-          controller.signal
+          controller.signal,
         );
 
-        setEmployee(data);
+        if (!controller.signal.aborted) {
+          setEmployee(data);
+          setLoading(false);
+        }
       } catch (error) {
         if (
           error instanceof DOMException &&
@@ -61,11 +67,10 @@ export default function EditEmployeePage({
 
         if (error instanceof ApiError && error.status === 404) {
           setError("Empleado no encontrado.");
-          return;
+        } else {
+          setError("No se pudo cargar el empleado.");
         }
 
-        setError("No se pudo cargar el empleado.");
-      } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
         }
@@ -91,7 +96,9 @@ export default function EditEmployeePage({
   if (loading) {
     return (
       <main className="min-h-screen p-8">
-        <p>Cargando empleado...</p>
+        <p className="text-sm text-gray-500">
+          Cargando empleado...
+        </p>
       </main>
     );
   }
@@ -99,14 +106,14 @@ export default function EditEmployeePage({
   if (error || !employee) {
     return (
       <main className="min-h-screen p-8">
-        <p className="text-red-500">
+        <p className="text-sm text-red-500">
           {error ?? "Empleado no encontrado."}
         </p>
 
         <button
           type="button"
           onClick={() => router.push("/dashboard")}
-          className="mt-4"
+          className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white"
         >
           Volver al dashboard
         </button>
@@ -116,7 +123,7 @@ export default function EditEmployeePage({
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold">
+      <h1 className="text-3xl font-bold tracking-tight">
         Editar empleado
       </h1>
 

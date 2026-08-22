@@ -1,6 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useState,
+  type ChangeEvent,
+} from "react";
 
 import type { Department } from "@/types/department";
 import type { EmployeeRequest } from "@/types/employee";
@@ -33,34 +38,37 @@ export default function EmployeeForm({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState<EmployeeRequest>(initialData ?? emptyForm);
+  const [form, setForm] = useState<EmployeeRequest>(
+    () => initialData ?? emptyForm,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function fetchDepartments() {
       try {
-        setLoadingDepartments(true);
-        setError(null);
-
         const data = await getDepartments(controller.signal);
 
-        setDepartments(data);
+        if (!controller.signal.aborted) {
+          setDepartments(data);
+          setLoadingDepartments(false);
+        }
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
           return;
         }
 
         if (error instanceof ApiError && error.status === 401) {
           setError("Tu sesión ha expirado.");
-          return;
+        } else {
+          setError("No se pudieron cargar los departamentos.");
         }
 
-        setError("No se pudieron cargar los departamentos.");
-      } finally {
         if (!controller.signal.aborted) {
           setLoadingDepartments(false);
         }
@@ -75,14 +83,16 @@ export default function EmployeeForm({
   }, []);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
     const { name, value } = event.target;
 
     setForm((current) => ({
       ...current,
       [name]:
-        name === "salary" || name === "departmentId" ? Number(value) : value,
+        name === "salary" || name === "departmentId"
+          ? Number(value)
+          : value,
     }));
   }
 
@@ -95,27 +105,33 @@ export default function EmployeeForm({
 
       await onSubmit(form);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        setError("Tu sesión ha expirado.");
-        return;
-      }
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          setError("Tu sesión ha expirado.");
+          return;
+        }
 
-      if (error instanceof ApiError && error.status === 400) {
-        const data = error.data as ValidationErrorResponse;
+        if (error.status === 400) {
+          const data = error.data as ValidationErrorResponse;
 
-        setError(Object.values(data.errors).join(" "));
+          if (data?.errors) {
+            setError(Object.values(data.errors).join(" "));
+          } else {
+            setError("Los datos enviados no son válidos.");
+          }
 
-        return;
-      }
+          return;
+        }
 
-      if (error instanceof ApiError && error.status === 409) {
-        setError("Ya existe un empleado con esos datos.");
-        return;
-      }
+        if (error.status === 404) {
+          setError("El empleado o departamento no existe.");
+          return;
+        }
 
-      if (error instanceof ApiError && error.status === 404) {
-        setError("El empleado o departamento no existe.");
-        return;
+        if (error.status === 409) {
+          setError("Ya existe un empleado con esos datos.");
+          return;
+        }
       }
 
       setError("No se pudo guardar el empleado.");
@@ -125,91 +141,179 @@ export default function EmployeeForm({
   }
 
   if (loadingDepartments) {
-    return <p>Cargando departamentos...</p>;
-  }
-
-  if (error && departments.length === 0) {
-    return <p className="text-red-500">{error}</p>;
+    return (
+      <p className="text-sm text-gray-500">
+        Cargando departamentos...
+      </p>
+    );
   }
 
   if (departments.length === 0) {
-    return <p className="text-gray-500">No hay departamentos disponibles.</p>;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-sm text-gray-500">
+          {error ?? "No hay departamentos disponibles."}
+        </p>
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        name="firstName"
-        value={form.firstName}
-        onChange={handleChange}
-        placeholder="Nombre"
-        required
-      />
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label
+          htmlFor="firstName"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Nombre
+        </label>
 
-      <input
-        name="lastName"
-        value={form.lastName}
-        onChange={handleChange}
-        placeholder="Apellido"
-        required
-      />
+        <input
+          id="firstName"
+          name="firstName"
+          value={form.firstName}
+          onChange={handleChange}
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
 
-      <input
-        type="email"
-        name="email"
-        value={form.email}
-        onChange={handleChange}
-        placeholder="Email"
-        required
-      />
+      <div>
+        <label
+          htmlFor="lastName"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Apellido
+        </label>
 
-      <input
-        type="date"
-        name="birthDate"
-        value={form.birthDate}
-        onChange={handleChange}
-        required
-      />
+        <input
+          id="lastName"
+          name="lastName"
+          value={form.lastName}
+          onChange={handleChange}
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
 
-      <input
-        name="phoneNumber"
-        value={form.phoneNumber}
-        onChange={handleChange}
-        placeholder="Teléfono"
-        pattern="9[0-9]{8}"
-        required
-      />
+      <div>
+        <label
+          htmlFor="email"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Email
+        </label>
 
-      <input
-        type="number"
-        name="salary"
-        value={form.salary}
-        onChange={handleChange}
-        min="0"
-        step="0.01"
-        required
-      />
+        <input
+          id="email"
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
 
-      <select
-        name="departmentId"
-        value={form.departmentId}
-        onChange={handleChange}
-        required
-      >
-        <option value={0} disabled>
-          Selecciona un departamento
-        </option>
+      <div>
+        <label
+          htmlFor="birthDate"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Fecha de nacimiento
+        </label>
 
-        {departments.map((department) => (
-          <option key={department.id} value={department.id}>
-            {department.name}
+        <input
+          id="birthDate"
+          type="date"
+          name="birthDate"
+          value={form.birthDate}
+          onChange={handleChange}
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="phoneNumber"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Teléfono
+        </label>
+
+        <input
+          id="phoneNumber"
+          name="phoneNumber"
+          value={form.phoneNumber}
+          onChange={handleChange}
+          pattern="9[0-9]{8}"
+          placeholder="999999999"
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="salary"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Salario
+        </label>
+
+        <input
+          id="salary"
+          type="number"
+          name="salary"
+          value={form.salary}
+          onChange={handleChange}
+          min="0"
+          step="0.01"
+          required
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="departmentId"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Departamento
+        </label>
+
+        <select
+          id="departmentId"
+          name="departmentId"
+          value={form.departmentId}
+          onChange={handleChange}
+          required
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+        >
+          <option value={0} disabled>
+            Selecciona un departamento
           </option>
-        ))}
-      </select>
 
-      {error && <p className="text-red-500">{error}</p>}
+          {departments.map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <button type="submit" disabled={submitting}>
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
         {submitting ? "Guardando..." : submitLabel}
       </button>
     </form>

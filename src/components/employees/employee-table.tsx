@@ -9,7 +9,7 @@ import { ApiError } from "@/services/api-error";
 
 interface EmployeeTableProps {
   employees: Employee[];
-  onDeleted: () => void;
+  onDeleted: () => void | Promise<void>;
 }
 
 export default function EmployeeTable({
