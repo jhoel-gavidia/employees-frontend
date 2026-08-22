@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useState } from "react";
 
 import type { Department } from "@/types/department";
@@ -21,13 +22,15 @@ export default function EmployeeFilters({
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const filters: EmployeeFilter = {};
 
-    if (name.trim()) {
-      filters.name = name.trim();
+    const trimmedName = name.trim();
+
+    if (trimmedName) {
+      filters.name = trimmedName;
     }
 
     if (departmentId) {
@@ -50,6 +53,7 @@ export default function EmployeeFilters({
     setDepartmentId("");
     setMinSalary("");
     setMaxSalary("");
+
     onFilter({});
   }
 
@@ -70,7 +74,8 @@ export default function EmployeeFilters({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Buscar por nombre..."
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+            disabled={loading}
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50"
           />
         </div>
 
@@ -86,7 +91,8 @@ export default function EmployeeFilters({
             id="employee-department"
             value={departmentId}
             onChange={(event) => setDepartmentId(event.target.value)}
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+            disabled={loading}
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50"
           >
             <option value="">Todos los departamentos</option>
 
@@ -114,7 +120,8 @@ export default function EmployeeFilters({
             placeholder="S/ 0.00"
             min="0"
             step="0.01"
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+            disabled={loading}
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50"
           />
         </div>
 
@@ -134,7 +141,8 @@ export default function EmployeeFilters({
             placeholder="S/ 0.00"
             min="0"
             step="0.01"
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+            disabled={loading}
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50"
           />
         </div>
       </div>
