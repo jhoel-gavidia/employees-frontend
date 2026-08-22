@@ -31,7 +31,6 @@ export default function DashboardPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
@@ -140,98 +139,108 @@ export default function DashboardPage() {
     setEmployees((current) => current.slice(0, -1));
   }
 
-  async function handleLogout() {
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-
-      router.push("/login");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="flex items-center justify-between">
+  <>
+    <div className="mb-8">
+      <h1 className="text-3xl font-bold tracking-tight">
+        Dashboard
+      </h1>
+
+      <p className="mt-2 text-gray-500">
+        Gestiona los empleados y departamentos de tu organización.
+      </p>
+    </div>
+
+    <section>
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
-            Dashboard
-          </h1>
-
-          <p className="mt-2 text-gray-500">
-            Bienvenido al sistema de empleados.
-          </p>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          disabled={loading}
-        >
-          {loading ? "Logging out..." : "Logout"}
-        </button>
-      </div>
-
-      <section className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-xl font-semibold">
             Empleados
           </h2>
 
-          <Link href="/dashboard/employees/new">
-            Nuevo empleado
-          </Link>
+          <p className="mt-1 text-sm text-gray-500">
+            Administra los empleados registrados.
+          </p>
         </div>
 
+        <Link
+          href="/dashboard/employees/new"
+          className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+        >
+          + Nuevo empleado
+        </Link>
+      </div>
+
+      <div className="mb-6 rounded-xl border bg-white p-5">
         <EmployeeFilters
           departments={departments}
           onFilter={handleFilter}
           loading={loadingEmployees}
         />
+      </div>
 
-        {loadingEmployees && (
-          <p className="mt-4 text-gray-500">
+      {loadingEmployees && (
+        <div className="rounded-xl border bg-white p-6">
+          <p className="text-sm text-gray-500">
             Cargando empleados...
           </p>
-        )}
+        </div>
+      )}
 
-        {error && (
-          <p className="mt-4 text-red-500">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-600">
             {error}
           </p>
-        )}
+        </div>
+      )}
 
-        {!loadingEmployees && !error && (
-          <>
-            {employees.length === 0 ? (
-              <p className="mt-4 text-gray-500">
-                No hay empleados registrados.
+      {!loadingEmployees && !error && (
+        <>
+          {employees.length === 0 ? (
+            <div className="rounded-xl border bg-white p-12 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xl">
+                ♙
+              </div>
+
+              <h3 className="mt-4 font-semibold">
+                No hay empleados
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Todavía no hay empleados registrados.
               </p>
-            ) : (
-              <>
+
+              <Link
+                href="/dashboard/employees/new"
+                className="mt-5 inline-block rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white"
+              >
+                + Nuevo empleado
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-hidden rounded-xl border bg-white">
                 <EmployeeTable
                   employees={employees}
                   onDeleted={handleEmployeeDeleted}
                 />
+              </div>
 
+              <div className="mt-4">
                 <EmployeePagination
                   page={page}
                   totalPages={totalPages}
                   loading={loadingEmployees}
                   onPageChange={setPage}
                 />
-              </>
-            )}
-          </>
-        )}
-      </section>
-    </main>
-  );
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </section>
+  </>
+);
 }
