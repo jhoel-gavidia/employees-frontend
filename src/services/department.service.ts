@@ -1,9 +1,11 @@
+import type { Department } from "@/types/department";
+
 import { ApiError } from "@/services/api-error";
 
-import type {
-  Department,
-  DepartmentRequest,
-} from "@/types/department";
+export interface DepartmentRequest {
+  name: string;
+  officeLocation: string;
+}
 
 export async function getDepartments(
   signal?: AbortSignal,
@@ -97,7 +99,13 @@ export async function deleteDepartment(
   });
 
   if (!response.ok) {
-    const data = await response.json();
+    let data: unknown;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
 
     throw new ApiError(
       "Failed to delete department",
