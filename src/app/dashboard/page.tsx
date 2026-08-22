@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { Employee } from "@/types/employee";
+import type { Employee, EmployeeStatistics } from "@/types/employee";
 import type { Department } from "@/types/department";
 import type { EmployeeFilter } from "@/services/employee.service";
 
-import { filterEmployees, getEmployees } from "@/services/employee.service";
+import {
+  filterEmployees,
+  getEmployeeStatistics,
+  getEmployees,
+} from "@/services/employee.service";
 
 import { ApiError } from "@/services/api-error";
 import { getDepartments } from "@/services/department.service";
@@ -22,15 +26,39 @@ export default function DashboardPage() {
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [statistics, setStatistics] = useState<EmployeeStatistics | null>(null);
 
   const [filters, setFilters] = useState<EmployeeFilter>({});
-
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   const [loadingEmployees, setLoadingEmployees] = useState(true);
-
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchStatistics() {
+      try {
+        const data = await getEmployeeStatistics(controller.signal);
+        setStatistics(data);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 401) {
+          router.push("/login");
+        }
+      }
+    }
+
+    fetchStatistics();
+
+    return () => {
+      controller.abort();
+    };
+  }, [router]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,7 +107,6 @@ export default function DashboardPage() {
     async function fetchDepartments() {
       try {
         const data = await getDepartments(controller.signal);
-
         setDepartments(data);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -123,12 +150,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Estadísticas */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <p className="text-sm font-medium text-gray-500">Total empleados</p>
 
           <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
-            {employees.length}
+            {statistics?.totalEmployees ?? "—"}
           </p>
 
           <p className="mt-1 text-xs text-gray-400">Empleados registrados</p>
@@ -138,11 +166,11 @@ export default function DashboardPage() {
           <p className="text-sm font-medium text-gray-500">Departamentos</p>
 
           <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
-            {departments.length}
+            {statistics?.totalDepartments ?? "—"}
           </p>
 
           <p className="mt-1 text-xs text-gray-400">
-            Departamentos disponibles
+            Departamentos registrados
           </p>
         </div>
 
@@ -150,21 +178,15 @@ export default function DashboardPage() {
           <p className="text-sm font-medium text-gray-500">Salario promedio</p>
 
           <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
-            S/{" "}
-            {employees.length > 0
-              ? (
-                  employees.reduce(
-                    (total, employee) => total + Number(employee.salary),
-                    0,
-                  ) / employees.length
-                ).toLocaleString("es-PE", {
+            {statistics
+              ? `S/ ${Number(statistics.averageSalary).toLocaleString("es-PE", {
                   minimumFractionDigits: 2,
-                })
-              : "0.00"}
+                })}`
+              : "—"}
           </p>
 
           <p className="mt-1 text-xs text-gray-400">
-            Promedio de empleados cargados
+            Promedio de todos los empleados
           </p>
         </div>
 
@@ -172,20 +194,18 @@ export default function DashboardPage() {
           <p className="text-sm font-medium text-gray-500">Salario máximo</p>
 
           <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
-            S/{" "}
-            {employees.length > 0
-              ? Math.max(
-                  ...employees.map((employee) => Number(employee.salary)),
-                ).toLocaleString("es-PE", {
+            {statistics
+              ? `S/ ${Number(statistics.maxSalary).toLocaleString("es-PE", {
                   minimumFractionDigits: 2,
-                })
-              : "0.00"}
+                })}`
+              : "—"}
           </p>
 
           <p className="mt-1 text-xs text-gray-400">Mayor salario registrado</p>
         </div>
       </div>
 
+      {/* Empleados */}
       <section>
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -204,7 +224,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="mb-6 rounded-xl border bg-white p-5">
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
           <EmployeeFilters
             departments={departments}
             onFilter={handleFilter}
@@ -213,7 +233,7 @@ export default function DashboardPage() {
         </div>
 
         {loadingEmployees && (
-          <div className="rounded-xl border bg-white p-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
             <p className="text-sm text-gray-500">Cargando empleados...</p>
           </div>
         )}
@@ -227,7 +247,7 @@ export default function DashboardPage() {
         {!loadingEmployees && !error && (
           <>
             {employees.length === 0 ? (
-              <div className="rounded-xl border bg-white p-12 text-center">
+              <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xl">
                   ♙
                 </div>
@@ -247,7 +267,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-xl border bg-white">
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
                   <EmployeeTable
                     employees={employees}
                     onDeleted={handleEmployeeDeleted}

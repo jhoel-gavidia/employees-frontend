@@ -1,6 +1,11 @@
 import { ApiError } from "@/services/api-error";
 
-import type { Employee, PageResponse, EmployeeRequest } from "@/types/employee";
+import type {
+  Employee,
+  PageResponse,
+  EmployeeRequest,
+  EmployeeStatistics,
+} from "@/types/employee";
 
 export interface EmployeeFilter {
   name?: string;
@@ -37,14 +42,10 @@ export async function createEmployee(
   });
 
   if (!response.ok) {
-  const data = await response.json();
+    const data = await response.json();
 
-  throw new ApiError(
-    "Failed to create employee",
-    response.status,
-    data
-  );
-}
+    throw new ApiError("Failed to create employee", response.status, data);
+  }
 
   return response.json();
 }
@@ -97,7 +98,7 @@ export async function filterEmployees(
   filters: EmployeeFilter,
   page = 0,
   size = 10,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<PageResponse<Employee>> {
   const params = new URLSearchParams();
 
@@ -120,18 +121,26 @@ export async function filterEmployees(
   params.set("page", String(page));
   params.set("size", String(size));
 
-  const response = await fetch(
-    `/api/employees/filter?${params.toString()}`,
-    {
-      signal,
-    }
-  );
+  const response = await fetch(`/api/employees/filter?${params.toString()}`, {
+    signal,
+  });
 
   if (!response.ok) {
-    throw new ApiError(
-      "Failed to filter employees",
-      response.status
-    );
+    throw new ApiError("Failed to filter employees", response.status);
+  }
+
+  return response.json();
+}
+
+export async function getEmployeeStatistics(
+  signal?: AbortSignal,
+): Promise<EmployeeStatistics> {
+  const response = await fetch("/api/employees/statistics", {
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new ApiError("Failed to fetch employee statistics", response.status);
   }
 
   return response.json();

@@ -31,3 +31,10 @@ export interface EmployeeRequest {
   salary: number;
   departmentId: number;
 }
+
+export interface EmployeeStatistics {
+  totalEmployees: number;
+  totalDepartments: number;
+  averageSalary: number;
+  maxSalary: number;
+}
